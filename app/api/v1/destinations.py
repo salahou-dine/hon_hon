@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.consent import Consent
 from fastapi import HTTPException 
+from app.models.booking import Booking
 from app.models.preference import Preference
 from app.schemas.arrival import ArrivalResponse 
 from app.models.feedback import Feedback
@@ -132,14 +133,30 @@ async def destination_recommendations(
 
 @router.get("/arrival", response_model=ArrivalResponse)
 async def arrival_recommendations(
-    city: str = Query(..., min_length=2),
+    city: str | None = Query(None, min_length=2),
+    booking_id: str | None = Query(None),
     limit_per_category: int = Query(4, ge=1, le=10),
     budget: str | None = Query(None, description="low/mid/high (optional)"),
     user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    booking = None
+    if booking_id:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if booking.owner_id != user["id"]:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        city_clean = booking.destination.strip()
+    elif city:
+        city_clean = city.strip()
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="city or booking_id is required",
+        )
+
     # city formatting
-    city_clean = city.strip()
     city_label = city_clean.title()
 
     # consent required

@@ -2,7 +2,10 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from jose import jwt
+from passlib.context import CryptContext
 from app.core.config import settings
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def create_access_token(subject: str, payload: Optional[dict[str, Any]] = None) -> str:
@@ -32,3 +35,11 @@ def decode_token(token: str) -> dict[str, Any]:
     Lève une exception si token invalide.
     """
     return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGO])
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(password, hashed_password)

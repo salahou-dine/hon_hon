@@ -72,7 +72,8 @@ async def destination_recommendations_alias(
 
 @router.get("/arrival", response_model=ArrivalResponse)
 async def arrival_recommendations_alias(
-    city: str = Query(..., min_length=2),
+    city: str | None = Query(None, min_length=2),
+    booking_id: str | None = Query(None),
     limit_per_category: int = Query(4, ge=1, le=10),
     budget: str | None = Query(None, description="low/mid/high (optional)"),
     user: dict = Depends(get_current_user),
@@ -80,6 +81,7 @@ async def arrival_recommendations_alias(
 ):
     return await arrival_recommendations_handler(
         city=city,
+        booking_id=booking_id,
         limit_per_category=limit_per_category,
         budget=budget,
         user=user,

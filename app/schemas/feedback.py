@@ -4,8 +4,9 @@ from typing import Literal
 class FeedbackCreate(BaseModel):
     item_id: str = Field(..., min_length=3)
     category: Literal["hotel", "restaurant", "activity", "transport"]
-    city: str = Field(..., min_length=2)
-    action: Literal["like", "dislike"]
+    city: str | None = Field(None, min_length=2)
+    booking_id: str | None = None
+    action: Literal["like", "dislike", "clicked"]
 
 class FeedbackOut(BaseModel):
     user_id: str
