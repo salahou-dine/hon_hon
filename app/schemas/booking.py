@@ -1,5 +1,5 @@
 from datetime import date
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 class BookingCreate(BaseModel):
@@ -11,6 +11,12 @@ class BookingCreate(BaseModel):
     trip_type: str = "roundtrip"  # roundtrip/oneway
     cabin: str = "economy"        # economy/business
 
+    # Informations personnelles (optionnelles pour la première étape)
+    first_name: str | None = None
+    last_name: str | None = None
+    birth_date: date | None = None
+    email: EmailStr | None = None
+
 
 class BookingOut(BaseModel):
     id: str
@@ -21,6 +27,11 @@ class BookingOut(BaseModel):
     cabin: str
     depart_date: date
     return_date: date | None
+
+    first_name: str | None = None
+    last_name: str | None = None
+    birth_date: date | None = None
+    email: str | None = None
 
     class Config:
         from_attributes = True

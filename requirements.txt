@@ -8,3 +8,5 @@ alembic
 psycopg2-binary
 httpx
 python-multipart
+reportlab
+email-validator

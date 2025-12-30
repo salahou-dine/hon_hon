@@ -22,4 +22,5 @@ class DestinationRecoResponse(BaseModel):
     category: str
     budget: str | None = None
     limit: int
+    count: int
     items: list[DestinationItem]

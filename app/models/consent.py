@@ -12,6 +12,6 @@ class Consent(Base):
     user_id: Mapped[str] = mapped_column(String(120), primary_key=True, index=True)
 
     # Opt-in pour recos destination (données externes)
-    destination_recos_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    destination_recos_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

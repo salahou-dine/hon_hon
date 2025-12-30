@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from app.api.deps import get_current_user
 from app.schemas.destination import DestinationRecoResponse
 from app.services.destination_service import get_destination_provider
+from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.consent import Consent
@@ -19,6 +20,24 @@ router = APIRouter(prefix="/destinations", tags=["destinations"])
 ALLOWED_CATEGORIES = {"transport", "hotel", "restaurant", "activity"}
 ALLOWED_BUDGETS = {"low", "mid", "high"}
 
+def ensure_destination_consent(user_id: str, db: Session) -> None:
+    consent = db.query(Consent).filter(Consent.user_id == user_id).first()
+    if not consent:
+        consent = Consent(user_id=user_id, destination_recos_enabled=True)
+        db.add(consent)
+        db.commit()
+        db.refresh(consent)
+    if not consent.destination_recos_enabled:
+        raise HTTPException(
+            status_code=403,
+            detail="Destination recommendations disabled (consent required)",
+        )
+
+def ensure_feedback_table(db: Session) -> None:
+    bind = db.get_bind()
+    if not inspect(bind).has_table(Feedback.__tablename__):
+        Feedback.__table__.create(bind=bind, checkfirst=True)
+
 
 @router.get("/recommendations", response_model=DestinationRecoResponse)
 async def destination_recommendations(
@@ -31,12 +50,7 @@ async def destination_recommendations(
 ):
     city_clean = city.strip()
     city_label = city_clean.title()
-    consent = db.query(Consent).filter(Consent.user_id == user["id"]).first()
-    if not consent or not consent.destination_recos_enabled:
-        raise HTTPException(
-            status_code=403,
-            detail="Destination recommendations disabled (consent required)",
-        )
+    ensure_destination_consent(user["id"], db)
 
     pref = db.query(Preference).filter(Preference.user_id == user["id"]).first()
     interests = []
@@ -50,7 +64,14 @@ async def destination_recommendations(
     # Sécurité/robustesse : validation simple
     category = category.lower().strip()
     if category not in ALLOWED_CATEGORIES:
-        return {"city": city, "category": category, "budget": budget, "limit": limit, "items": []}
+        return {
+            "city": city,
+            "category": category,
+            "budget": budget,
+            "limit": limit,
+            "count": 0,
+            "items": [],
+        }
 
     if budget is not None:
         budget = budget.lower().strip()
@@ -74,6 +95,7 @@ async def destination_recommendations(
     
     # ✅ ÉTAPE 2 : Appliquer feedback utilisateur (like/dislike) pour personnalisation fine
     uid = user["id"]
+    ensure_feedback_table(db)
 
     feedbacks = (
         db.query(Feedback)
@@ -104,6 +126,7 @@ async def destination_recommendations(
         "category": category,
         "budget": budget,
         "limit": limit,
+        "count": len(items),
         "items": items
     }
 
@@ -120,12 +143,7 @@ async def arrival_recommendations(
     city_label = city_clean.title()
 
     # consent required
-    consent = db.query(Consent).filter(Consent.user_id == user["id"]).first()
-    if not consent or not consent.destination_recos_enabled:
-        raise HTTPException(
-            status_code=403,
-            detail="Destination recommendations disabled (consent required)",
-        )
+    ensure_destination_consent(user["id"], db)
 
     # prefs (budget + interests)
     pref = db.query(Preference).filter(Preference.user_id == user["id"]).first()
@@ -140,8 +158,9 @@ async def arrival_recommendations(
 
     provider = get_destination_provider()
 
-    categories = ["transport", "hotel", "restaurant", "activity"]
+    categories = ["hotel", "restaurant", "transport", "activity"]
     sections = {}
+    ensure_feedback_table(db)
 
     for cat in categories:
         items = await provider.search(

@@ -116,6 +116,21 @@ class MockDestinationProvider(DestinationProvider):
 
             rating = round(random.uniform(3.6, 4.9), 1)
             distance_km = round(random.uniform(0.3, 6.5), 1)
+            
+            # Génération de liens externes réalistes selon la catégorie
+            item_slug = name.lower().replace(' ', '-').replace('é', 'e').replace('è', 'e').replace('ô', 'o')
+            city_slug = city.lower().replace(' ', '-').replace('é', 'e').replace('è', 'e')
+            
+            if category == "hotel":
+                external_link = f"https://www.booking.com/hotel/{city_slug}/{item_slug}.html"
+            elif category == "restaurant":
+                external_link = f"https://www.tripadvisor.com/Restaurant_Review-{city_slug}-{item_slug}.html"
+            elif category == "activity":
+                external_link = f"https://www.getyourguide.com/{city_slug}/{item_slug}-t123456"
+            elif category == "transport":
+                external_link = f"https://www.rome2rio.com/s/{city_slug}/{item_slug}"
+            else:
+                external_link = None
 
             items.append(
                 DestinationItem(
@@ -132,7 +147,7 @@ class MockDestinationProvider(DestinationProvider):
                         f"{name.lower().replace(' ', '_')}/400/250"
                     ),
                     source="mock",
-                    link=None,
+                    link=external_link,
                 )
             )
 

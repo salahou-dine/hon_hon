@@ -22,4 +22,10 @@ class Booking(Base):
     depart_date: Mapped[date] = mapped_column(Date)
     return_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+    # Informations personnelles du voyageur
+    first_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

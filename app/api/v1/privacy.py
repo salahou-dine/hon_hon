@@ -16,7 +16,7 @@ def get_consent(
 ):
     row = db.query(Consent).filter(Consent.user_id == user["id"]).first()
     if not row:
-        row = Consent(user_id=user["id"], destination_recos_enabled=False)
+        row = Consent(user_id=user["id"], destination_recos_enabled=True)
         db.add(row)
         db.commit()
         db.refresh(row)
