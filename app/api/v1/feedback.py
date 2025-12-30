@@ -32,9 +32,18 @@ def upsert_feedback(
     if not city_clean:
         raise HTTPException(status_code=422, detail="city or booking_id is required")
 
+    item_id = payload.item_id.strip() if payload.item_id else ""
+    if not item_id:
+        if payload.booking_id:
+            item_id = f"booking:{payload.booking_id}:{payload.category}"
+        elif city_clean:
+            item_id = f"city:{city_clean}:{payload.category}"
+        else:
+            raise HTTPException(status_code=422, detail="item_id or booking_id is required")
+
     existing = (
         db.query(Feedback)
-        .filter(Feedback.user_id == uid, Feedback.item_id == payload.item_id)
+        .filter(Feedback.user_id == uid, Feedback.item_id == item_id)
         .first()
     )
 
@@ -46,7 +55,7 @@ def upsert_feedback(
     else:
         fb = Feedback(
             user_id=uid,
-            item_id=payload.item_id,
+            item_id=item_id,
             category=payload.category,
             city=city_clean,
             action=payload.action,
@@ -57,7 +66,7 @@ def upsert_feedback(
 
     return {
         "user_id": uid,
-        "item_id": payload.item_id,
+        "item_id": item_id,
         "category": payload.category,
         "city": city_clean,
         "action": payload.action,
